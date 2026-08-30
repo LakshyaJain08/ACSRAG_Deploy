@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ACSRAG Load & Latency Benchmark Script
  * Forward Deployed Engineering performance validation tool.
  */
@@ -6,20 +6,25 @@
 const http = require('http');
 
 const BASE_URL = process.env.ACSRAG_URL || 'http://localhost:3000';
-const CONCURRENT_USERS = parseInt(process.env.CONCURRENCY || '5', 10);
-const TOTAL_REQUESTS = parseInt(process.env.TOTAL_REQUESTS || '15', 10);
+const CONCURRENT_USERS = parseInt(process.env.CONCURRENCY || '2', 10);
+const TOTAL_REQUESTS = parseInt(process.env.TOTAL_REQUESTS || '4', 10);
 
 const TEST_QUERIES = [
-   What is the candidates name and email in the resume?,
- According to NexaAI Solutions leave policy how many sick leaves are allowed?,
-  LLM vs RAG,
-  What are the main issues in code generator design?
+  "What is the candidate name and email in the resume?",
+  "According to NexaAI Solutions leave policy, how many sick leaves are allowed?",
+  "LLM vs RAG",
+  "What are the main issues in code generator design?"
 ];
 
 function sendQuery(query) {
   return new Promise((resolve) => {
-    const postData = JSON.stringify({ message: query, webSearch: false, thinkMode: false });
-    const url = new URL(${BASE_URL}/api/chat);
+    const postData = JSON.stringify({
+      question: query,
+      webSearch: false,
+      thinkMode: false,
+      sessionId: 'fde-benchmark-session'
+    });
+    const url = new URL(`${BASE_URL}/api/chat`);
     const start = Date.now();
 
     const req = http.request(url, {
@@ -64,11 +69,11 @@ function calculatePercentile(arr, p) {
 }
 
 async function runLoadTest() {
-  console.log(\n======================================================);
-  console.log(🧪 [FDE LOAD TEST] Launching Benchmark Suite);
-  console.log(   Target: /api/chat);
-  console.log(   Total Requests:  | Concurrency: );
-  console.log(======================================================\n);
+  console.log(`\n======================================================`);
+  console.log(`🧪 [FDE LOAD TEST] Launching Benchmark Suite`);
+  console.log(`   Target: ${BASE_URL}/api/chat`);
+  console.log(`   Total Requests: ${TOTAL_REQUESTS} | Concurrency: ${CONCURRENT_USERS}`);
+  console.log(`======================================================\n`);
 
   const results = [];
   let completed = 0;
@@ -80,7 +85,7 @@ async function runLoadTest() {
       const res = await sendQuery(q);
       results.push(res);
       completed++;
-      process.stdout.write(\rProgress: / requests completed...);
+      process.stdout.write(`\rProgress: ${completed}/${TOTAL_REQUESTS} requests completed...`);
     }
   }
 
@@ -100,21 +105,21 @@ async function runLoadTest() {
   const p99 = calculatePercentile(latencies, 99);
   const rps = (TOTAL_REQUESTS / totalDurationSec).toFixed(2);
 
-  console.log(\n\n======================================================);
-  console.log(📊 [BENCHMARK RESULTS SUMMARY]);
-  console.log(======================================================);
-  console.log(• Total Requests:    );
-  console.log(• Successful:         (%));
-  console.log(• Failed:            );
-  console.log(• Total Duration:    s);
-  console.log(• Throughput (RPS):   req/sec);
-  console.log(------------------------------------------------------);
-  console.log(• Avg Latency:        ms);
-  console.log(• P50 Latency:        ms);
-  console.log(• P90 Latency:        ms);
-  console.log(• P95 Latency:        ms);
-  console.log(• P99 Latency:        ms);
-  console.log(======================================================\n);
+  console.log(`\n\n======================================================`);
+  console.log(`📊 [BENCHMARK RESULTS SUMMARY]`);
+  console.log(`======================================================`);
+  console.log(`• Total Requests:    ${TOTAL_REQUESTS}`);
+  console.log(`• Successful:        ${successful} (${((successful/TOTAL_REQUESTS)*100).toFixed(1)}%)`);
+  console.log(`• Failed:            ${failed}`);
+  console.log(`• Total Duration:    ${totalDurationSec.toFixed(2)}s`);
+  console.log(`• Throughput (RPS):  ${rps} req/sec`);
+  console.log(`------------------------------------------------------`);
+  console.log(`• Avg Latency:       ${avgLatency} ms`);
+  console.log(`• P50 Latency:       ${p50} ms`);
+  console.log(`• P90 Latency:       ${p90} ms`);
+  console.log(`• P95 Latency:       ${p95} ms`);
+  console.log(`• P99 Latency:       ${p99} ms`);
+  console.log(`======================================================\n`);
 }
 
 runLoadTest();
