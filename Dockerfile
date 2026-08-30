@@ -31,8 +31,8 @@ ENV HOSTNAME=0.0.0.0
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy static assets and documents
-COPY --from=builder /app/public ./public
+# Create public dir and copy documents
+RUN mkdir -p public
 COPY --from=builder /app/documents ./documents
 
 # Set up runtime cache directory
